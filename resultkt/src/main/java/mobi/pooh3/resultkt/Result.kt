@@ -22,33 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-class Result<T, E> private constructor(private val orNull: T?, private val e: E?) {
+class Result<T> private constructor(private val orNull: T?, private val e: Throwable?) {
 
-    val error: E get() = e
+    val error: Throwable get() = e
             ?: throw NoSuchElementException("No error present")
     val value: T = orNull
             ?: throw NoSuchElementException("No value present")
     val hasValue: Boolean get() = orNull != null
     val hasError: Boolean get() = e != null
 
-    fun filter(predicate: (T?) -> Boolean): Result<T, E> =
+    fun filter(predicate: (T?) -> Boolean): Result<T> =
             if (hasError || predicate.invoke(orNull)) this else empty()
 
-    fun <U> map(mapper: (T?) -> U?): Result<U?, E> =
+    fun <U> map(mapper: (T?) -> U?): Result<U?> =
             if (hasError) empty() else Result.ofNullable(mapper.invoke(orNull))
 
-    fun <U> flatMap(mapper: (T?) -> Result<U, E>): Result<U, E> =
+    fun <U> flatMap(mapper: (T?) -> Result<U>): Result<U> =
             if (hasError) empty() else requireNotNull(mapper.invoke(orNull))
 
     fun getOrDefault(default: () -> T): T = orNull ?: default.invoke()
-    fun getOrElse(default: (E) -> T): T = if (e != null) default.invoke(e) else value
+    fun getOrElse(default: (Throwable) -> T): T = if (e != null) default.invoke(e) else value
 
-    fun onSuccess(successConsumer: (T?) -> Unit): Result<T, E> {
+    fun onSuccess(successConsumer: (T?) -> Unit): Result<T> {
         if (e == null) successConsumer.invoke(orNull)
         return this
     }
 
-    fun onError(errorConsumer: (E?) -> Unit): Result<T, E> {
+    fun onError(errorConsumer: (Throwable?) -> Unit): Result<T> {
         if (e != null) errorConsumer.invoke(e)
         return this
     }
@@ -62,7 +62,7 @@ class Result<T, E> private constructor(private val orNull: T?, private val e: E?
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-        other as Result<*, *>
+        other as Result<*>
         if (orNull != other.orNull) return false
         if (e != other.e) return false
         return true
@@ -75,12 +75,12 @@ class Result<T, E> private constructor(private val orNull: T?, private val e: E?
     }
 
     companion object {
-        private val EMPTY = Result<Any, Any>(null, null)
+        private val EMPTY = Result<Any>(null, null)
 
         @Suppress("UNCHECKED_CAST")
-        fun <T : Any?, E : Any?> empty(): Result<T, E> = EMPTY as Result<T, E>
-        fun <T : Any, E : Any?> of(value: T): Result<T, E> = Result(requireNotNull(value), null)
-        fun <T : Any?, E : Any?> ofNullable(value: T?): Result<T, E> = Result(value, null)
-        fun <T : Any?, E : Any> errorOf(e: E): Result<T, E> = Result(null, requireNotNull(e))
+        fun <T : Any?> empty(): Result<T> = EMPTY as Result<T>
+        fun <T : Any> of(value: T): Result<T> = Result(requireNotNull(value), null)
+        fun <T : Any?> ofNullable(value: T?): Result<T> = Result(value, null)
+        fun <T : Any?> errorOf(e: Throwable): Result<T> = Result(null, requireNotNull(e))
     }
 }
