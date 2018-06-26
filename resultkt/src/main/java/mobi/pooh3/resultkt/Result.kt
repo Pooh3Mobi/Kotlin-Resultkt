@@ -22,65 +22,56 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-class Result<T> private constructor(private val orNull: T?, private val e: Throwable?) {
+sealed class Result<T> {
 
-    val error: Throwable get() = e
-            ?: throw NoSuchElementException("No error present")
-    val value: T = orNull
-            ?: throw NoSuchElementException("No value present")
-    val hasValue: Boolean get() = orNull != null
-    val hasError: Boolean get() = e != null
+    abstract fun isSuccess() : Boolean
+    abstract fun isFailure() : Boolean
+    abstract fun get() : T
 
-    fun filter(predicate: (T?) -> Boolean): Result<T> =
-            if (hasError || predicate.invoke(orNull)) this else empty()
-
-    fun <U> map(mapper: (T?) -> U?): Result<U?> =
-            if (hasError) empty() else Result.ofNullable(mapper.invoke(orNull))
-
-    fun <U> flatMap(mapper: (T?) -> Result<U>): Result<U> =
-            if (hasError) empty() else requireNotNull(mapper.invoke(orNull))
-
-    fun getOrDefault(default: () -> T): T = orNull ?: default.invoke()
-    fun getOrElse(default: (Throwable) -> T): T = if (e != null) default.invoke(e) else value
-
-    fun onSuccess(successConsumer: (T?) -> Unit): Result<T> {
-        if (e == null) successConsumer.invoke(orNull)
-        return this
+    data class Success<T>(val value: T) : Result<T>() {
+        override fun isSuccess() = true
+        override fun isFailure() = false
+        override fun get(): T = value
     }
 
-    fun onError(errorConsumer: (Throwable?) -> Unit): Result<T> {
-        if (e != null) errorConsumer.invoke(e)
-        return this
+    data class Failure<T>(val e: Throwable) : Result<T>() {
+        override fun isSuccess() = false
+        override fun isFailure() = true
+        override fun get(): T = throw NoSuchElementException()
     }
 
-    @Throws(exceptionClasses = [(Throwable::class)])
-    fun <X : Throwable> orElseThrow(exceptionSupplier: () -> X): T =
-            value ?: throw exceptionSupplier.invoke()
-
-    override fun toString(): String = "Result[${orNull?:e}]"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        other as Result<*>
-        if (orNull != other.orNull) return false
-        if (e != other.e) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = orNull?.hashCode() ?: 0
-        result = 31 * result + (e?.hashCode() ?: 0)
-        return result
+    object Ignore : Result<Any>() {
+        override fun isSuccess(): Boolean = false
+        override fun isFailure(): Boolean = false
+        override fun get(): Any = throw NoSuchElementException()
     }
 
     companion object {
-        private val EMPTY = Result<Any>(null, null)
-
-        @Suppress("UNCHECKED_CAST")
-        fun <T : Any?> empty(): Result<T> = EMPTY as Result<T>
-        fun <T : Any> of(value: T): Result<T> = Result(requireNotNull(value), null)
-        fun <T : Any?> ofNullable(value: T?): Result<T> = Result(value, null)
-        fun <T : Any?> errorOf(e: Throwable): Result<T> = Result(null, requireNotNull(e))
+        fun <T> ignore(): Result<T> = Ignore as Result<T>
+        fun <T> just(value: T) : Result<T> = Success(value)
+        fun <T> error(e: Throwable) : Result<T> = Failure(e)
     }
+
+    fun onSuccess(body: (T) -> Unit) : Result<T> {
+        if (this is Success) body(value)
+        return this
+    }
+
+    fun onFailure(body: (Throwable) -> Unit) : Result<T> {
+        if (this is Failure) body(e)
+        return this
+    }
+
+    fun <U> map(f: (T) -> U): Result<U> =
+            if (this is Success) Success(f(value)) else ignore()
+
+
+    fun <U> flatMap(f: (T) -> Result<U>): Result<U> =
+            if (this is Success) f(value) else ignore()
+
+    fun filter(f: (T) -> Boolean): Result<T> =
+            if (this is Success) {
+                if(f(value)) this else ignore()
+            } else this
+
 }
