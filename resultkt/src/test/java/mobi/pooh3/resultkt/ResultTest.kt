@@ -1,9 +1,10 @@
 package mobi.pooh3.resultkt
 
-import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.*
 import org.junit.Test
 
 import org.junit.Assert.*
+import java.util.*
 
 class ResultTest {
 
@@ -31,23 +32,92 @@ class ResultTest {
     }
 
     @Test
-    fun get() {
+    fun get_NotNull_fromSuccess() {
+        val obj = Object()
+        val successObj = Result.just(obj).get()
+        assertThat(successObj , `is`(obj))
     }
 
     @Test
-    fun onSuccess() {
+    fun get_NullValue_fromSuccess() {
+        val successObj = Result.just(null).get()
+        assertThat(successObj , `is`(nullValue()))
+    }
+
+    @Test
+    fun get_fromFailure() {
+        try {
+            Result.error<Any>(Throwable()).get()
+            fail()
+        } catch (e: NoSuchElementException) {
+
+        }
+    }
+
+    @Test
+    fun onSuccess_NotNull() {
+        Result.just(Object())
+                .onSuccess {
+                    assertThat(it, `is`(notNullValue()))
+                }
+    }
+
+    @Test
+    fun onSuccess_NullValue() {
+        Result.just(null)
+                .onSuccess {
+                    assertThat(it, `is`(nullValue()))
+                }
     }
 
     @Test
     fun onFailure() {
+        Result.error<Any>(Throwable())
+                .onFailure {
+                    assertThat(it, `is`(notNullValue()))
+                }
+    }
+
+    @Test
+    fun success_callingOnSuccess_notCallingOnFailure() {
+        Result.just(Object())
+                .onSuccess {
+                    assertThat(it, `is`(notNullValue()))
+                }
+                .onFailure {
+                    fail()
+                }
+    }
+
+    @Test
+    fun failure_callingOnSuccess_notCallingOnFailure() {
+        Result.error<Any>(Throwable())
+                .onSuccess {
+                    fail()
+                }
+                .onFailure {
+                    assertThat(it, `is`(notNullValue()))
+                }
     }
 
     @Test
     fun map() {
+        val mapped = Result.just("1010")
+                .map { it.toInt() + 5 }
+                .get()
+        assertThat(mapped, `is`(1015))
     }
 
     @Test
     fun flatMap() {
+        val res1000 = Result.just(10000)
+        val flatMapped = Result.just(1.2233)
+                .flatMap { float ->
+
+                    res1000.map { float * it }
+
+                }.get()
+        assertThat(flatMapped, `is`(12233.0))
     }
 
     @Test
