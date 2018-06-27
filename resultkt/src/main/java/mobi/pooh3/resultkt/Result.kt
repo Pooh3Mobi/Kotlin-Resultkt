@@ -46,16 +46,20 @@ sealed class Result<T> {
         return this
     }
 
-    fun <U> map(f: (T) -> U): Result<U> =
-            if (this is Success) Success(f(value)) else ignore()
+    fun <U> map(f: (T) -> U): Result<U> = when(this) {
+        is Success -> Success(f(value))
+        is Failure -> error(e)
+        else -> ignore()
+    }
 
-
-    fun <U> flatMap(f: (T) -> Result<U>): Result<U> =
-            if (this is Success) f(value) else ignore()
+    fun <U> flatMap(f: (T) -> Result<U>): Result<U> = when(this) {
+        is Success -> f(value)
+        is Failure -> error(e)
+        else -> ignore()
+    }
 
     fun filter(f: (T) -> Boolean): Result<T> =
-            if (this is Success) {
-                if(f(value)) this else ignore()
-            } else this
+            if (this is Success && f(value)) this
+            else ignore()
 
 }

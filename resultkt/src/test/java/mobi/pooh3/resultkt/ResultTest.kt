@@ -122,5 +122,17 @@ class ResultTest {
 
     @Test
     fun filter() {
+        (1..10).asSequence().map {
+            Result.just(it)
+        }.forEach {
+
+            it
+                    .filter {
+                        it < 5
+                    }.onSuccess {
+                        assertTrue(it in 0..4)
+                    }
+
+        }
     }
 }
