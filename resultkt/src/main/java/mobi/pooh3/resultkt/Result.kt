@@ -62,4 +62,9 @@ sealed class Result<T> {
             if (this is Success && f(value)) this
             else ignore()
 
+    fun recoverWith(f: (Throwable) -> Result<T>): Result<T> = when(this) {
+        is Success -> Success(value)
+        is Failure -> f.invoke(e)
+        else -> ignore()
+    }
 }

@@ -135,4 +135,47 @@ class ResultTest {
 
         }
     }
+
+    @Test
+    fun recover() {
+        val value = Result.error<String>(Throwable())
+                .recoverWith { Result.Success("test") }
+                .get()
+        assertThat(value,`is`("test"))
+    }
+
+    @Test fun monadLaws() {
+        val x = "1000"
+        val f: (String) -> Result<Int> = { Result.just(it.toInt()) }
+        val g: (Int) -> Result<Double> = { Result.just(it.toDouble()) }
+
+        val resultStringX = Result.just(x)
+
+        assertTrue(
+                resultStringX.flatMap(f) ==  f(x)
+        )
+        assertTrue(
+                resultStringX.flatMap { Result.just(it) } == resultStringX
+        )
+        assertTrue(
+                resultStringX.flatMap { f(it).flatMap(g) } == resultStringX.flatMap(f).flatMap(g)
+        )
+    }
+
+    @Test fun functorLaws() {
+
+        fun <T> id(x: T): T = x
+        val x = "1000"
+        val f: (String) -> Int = { it.toInt() }
+        val g: (Int) -> Double = { it.toDouble() }
+
+        val resultStringX = Result.just(x)
+
+        assertTrue(
+                resultStringX.map{ id(it) } == id(resultStringX)
+        )
+        assertTrue(
+                resultStringX.map { g(f(it)) } == resultStringX.map(f).map(g)
+        )
+    }
 }
