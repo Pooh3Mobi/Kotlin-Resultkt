@@ -25,9 +25,13 @@ class Repository {
 }
 
 
-fun <T> tryTimes(@IntRange(from = 1) max: Int, body: () -> T): Result<T> =
-        (1..max).asSequence().map {
-            try { Result.Success(body()) }
-            catch (e: Throwable) { Result.error<T>(e) }
-        }.find { it is Result.Success } ?: Result.ignore()
+fun <T> tryTimes(@IntRange(from = 1) max: Int, body: () -> T): Result<T> {
+    var lastError: Throwable? = null
+    return (1..max).asSequence().map {
+        try { Result.Success(body()) }
+        catch (e: Throwable) { lastError = e ;Result.error<T>(e) }
+    }.find { it is Result.Success }
+            ?: lastError?.let { Result.error<T>(it) }
+            ?: Result.ignore()
+}
 ```
