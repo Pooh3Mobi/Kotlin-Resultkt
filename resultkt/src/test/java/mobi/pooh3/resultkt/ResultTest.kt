@@ -83,8 +83,7 @@ class ResultTest {
         Result.just(Object())
                 .onSuccess {
                     assertThat(it, `is`(notNullValue()))
-                }
-                .onFailure {
+                }.onFailure {
                     fail()
                 }
     }
@@ -94,8 +93,7 @@ class ResultTest {
         Result.error<Any>(Throwable())
                 .onSuccess {
                     fail()
-                }
-                .onFailure {
+                }.onFailure {
                     assertThat(it, `is`(notNullValue()))
                 }
     }
@@ -103,8 +101,9 @@ class ResultTest {
     @Test
     fun map() {
         val mapped = Result.just("1010")
-                .map { it.toInt() + 5 }
-                .get()
+                .map {
+                    it.toInt() + 5
+                }.get()
         assertThat(mapped, `is`(1015))
     }
 
@@ -112,10 +111,8 @@ class ResultTest {
     fun flatMap() {
         val res1000 = Result.just(10000)
         val flatMapped = Result.just(1.2233)
-                .flatMap { float ->
-
-                    res1000.map { float * it }
-
+                .flatMap {
+                    fn -> res1000.map { fn * it }
                 }.get()
         assertThat(flatMapped, `is`(12233.0))
     }
@@ -125,22 +122,20 @@ class ResultTest {
         (1..10).asSequence().map {
             Result.just(it)
         }.forEach {
-
-            it
-                    .filter {
-                        it < 5
-                    }.onSuccess {
-                        assertTrue(it in 0..4)
-                    }
-
+            it.filter { n ->
+                n < 5
+            }.onSuccess { n ->
+                assertTrue(n in 0..4)
+            }
         }
     }
 
     @Test
     fun recover() {
         val value = Result.error<String>(Throwable())
-                .recoverWith { Result.Success("test") }
-                .get()
+                .recoverWith {
+                    Result.Success("test")
+                }.get()
         assertThat(value,`is`("test"))
     }
 
