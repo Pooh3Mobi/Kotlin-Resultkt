@@ -131,9 +131,18 @@ class ResultTest {
     }
 
     @Test
-    fun recover() {
+    fun recoverWith() {
         val value = Result.error<String>(Throwable())
                 .recoverWith {
+                    Result.Success("test")
+                }.get()
+        assertThat(value,`is`("test"))
+    }
+
+    @Test
+    fun recover() {
+        val value = Result.error<String>(Throwable())
+                .recover {
                     Result.Success("test")
                 }.get()
         assertThat(value,`is`("test"))

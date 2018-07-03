@@ -67,4 +67,10 @@ sealed class Result<T> {
         is Failure -> f.invoke(e)
         else -> ignore()
     }
+
+    fun recover(f: () -> Result<T>): Result<T> = when(this) {
+        is Success -> Success(value)
+        is Failure -> f.invoke()
+        else -> ignore()
+    }
 }
