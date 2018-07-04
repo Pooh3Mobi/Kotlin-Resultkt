@@ -6,8 +6,8 @@ import mobi.pooh3.resultkt.Result
 fun main(args: Array<String>) {
     val rep = Repository()
     val userId = UserId("test")
-    tryTimes(1) { rep.findCachedUserData(userId) }
-            .recover { tryTimes(3){ rep.findUserData(userId) } }
+    tryTimes{ rep.findCachedUserData(userId) }
+            .recover { tryTimes(1){ rep.findUserData(userId) } }
             .onSuccess{ handleSuccess() }
             .onFailure{ handleFailure() }
 
@@ -25,7 +25,7 @@ class Repository {
 }
 
 
-fun <T> tryTimes(@IntRange(from = 1) max: Int, body: () -> T): Result<T> {
+fun <T> tryTimes(@IntRange(from = 1) max: Int = 1, body: () -> T): Result<T> {
     var lastError: Throwable? = null
     return (1..max).asSequence().map {
         try { Result.Success(body()) }
