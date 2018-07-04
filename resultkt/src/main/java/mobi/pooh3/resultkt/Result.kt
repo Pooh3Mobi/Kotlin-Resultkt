@@ -33,7 +33,7 @@ sealed class Result<T> {
     companion object {
         fun <T> ignore(): Result<T> = Ignore as Result<T>
         fun <T> just(value: T) : Result<T> = Success(value)
-        fun <T> error(e: Throwable) : Result<T> = Failure(e)
+        fun <T> error(e: Throwable) : Result<T> = Failure(requireNotNull(e))
     }
 
     fun onSuccess(body: (T) -> Unit) : Result<T> {
